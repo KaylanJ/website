@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Code Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/editor/editor.main.min.css">
+</head>
+<body class="bg-gray-900 text-white font-sans">
+
+    <div class="flex h-screen">
+        <div class="w-64 bg-gray-800 p-4 border-r border-gray-700">
+            <h2 class="text-xl font-bold mb-6 text-blue-400">Projects</h2>
+            <nav class="space-y-2">
+                <button class="w-full text-left p-2 bg-blue-600 rounded">Python: Calculator</button>
+                <button class="w-full text-left p-2 hover:bg-gray-700 rounded text-gray-400">C++: Data Structures (Coming Soon)</button>
+            </nav>
+        </div>
+
+        <div class="flex-1 flex flex-col">
+            <div class="p-4 bg-gray-800 flex justify-between items-center border-b border-gray-700">
+                <span class="font-mono text-sm">project_calculator.py</span>
+                <div>
+                    <button onclick="runCode()" id="run-btn" class="bg-green-600 hover:bg-green-500 px-4 py-1 rounded text-sm font-bold mr-2">▶ Run Code</button>
+                    <button onclick="runTests()" class="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-sm font-bold">🧪 Run Tests</button>
+                </div>
+            </div>
+
+            <div id="editor-container" class="flex-1"></div>
+
+            <div class="h-1/3 bg-black p-4 font-mono text-sm overflow-y-auto border-t border-gray-700">
+                <div class="text-gray-500 mb-2 underline">Terminal Output:</div>
+                <pre id="output" class="text-green-400"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+    <script>
+        let editor;
+        let pyodide;
+
+        // 1. Initialize Monaco Editor
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: "def add(a, b):\n    return a + b\n\nprint(f'Result: {add(10, 5)}')",
+                language: 'python',
+                theme: 'vs-dark',
+                automaticLayout: true
+            });
+        });
+
+        // 2. Initialize The Emulator
+        async function initPyodide() {
+            document.getElementById('output').innerText = "Loading Python Engine...";
+            pyodide = await loadPyodide();
+            document.getElementById('output').innerText = "Python Ready.";
+        }
+        initPyodide();
+
+        // 3. Run the Code
+        async function runCode() {
+            const code = editor.getValue();
+            const outputElement = document.getElementById('output');
+            outputElement.innerText = "Running...\n";
+            
+            try {
+                // Redirect python print() to our terminal div
+                pyodide.runPython(`
+                    import sys
+                    import io
+                    sys.stdout = io.StringIO()
+                `);
+                await pyodide.runPythonAsync(code);
+                const stdout = pyodide.runPython("sys.stdout.getvalue()");
+                outputElement.innerText = stdout;
+            } catch (err) {
+                outputElement.innerText = "Error: " + err;
+            }
+        }
+
+        // 4. Test Case Logic
+        async function runTests() {
+            const userCode = editor.getValue();
+            const outputElement = document.getElementById('output');
+            outputElement.innerText = "Running Test Cases...\n";
+
+            // Define your test cases here
+            const testCases = [
+                { call: "add(2, 2)", expected: 4 },
+                { call: "add(-1, 1)", expected: 0 },
+                { call: "add(10, 20)", expected: 30 }
+            ];
+
+            try {
+                await pyodide.runPythonAsync(userCode);
+                let allPassed = true;
+                
+                for (let test of testCases) {
+                    let result = pyodide.runPython(test.call);
+                    if (result === test.expected) {
+                        outputElement.innerText += `PASSED: ${test.call} == ${test.expected}\n`;
+                    } else {
+                        outputElement.innerText += `FAILED: ${test.call}. Got ${result}, expected ${test.expected}\n`;
+                        allPassed = false;
+                    }
+                }
+                if(allPassed) outputElement.innerText += "\n🏆 ALL TESTS PASSED!";
+            } catch (err) {
+                outputElement.innerText = "Testing Error: Ensure your functions are defined correctly.\n" + err;
+            }
+        }
+    </script>
+</body>
+</html>
