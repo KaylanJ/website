@@ -48,9 +48,12 @@ export default function AdminDashboard() {
     setLoading(true);
     const { data: pData, error: pErr } = await supabase.from('projects').insert([{ title, language, base_code: baseCode }]).select();
     if (pErr) return alert("DEPLOYMENT_FAILED");
+    
+    // Attach project_id to test cases and insert
     const finalTests = testCases.map(tc => ({ ...tc, project_id: pData[0].id }));
     await supabase.from('test_cases').insert(finalTests);
-    alert("MODULE_DEPLOYED");
+    
+    alert("MODULE_DEPLOYED_SUCCESSFULLY");
     setLoading(false);
     refreshAll();
   };
@@ -58,7 +61,12 @@ export default function AdminDashboard() {
   const postNews = async () => {
     const { error } = await supabase.from('announcements').insert([{ title: newsTitle, content: newsContent }]);
     if (error) alert("BROADCAST_FAILED");
-    else { alert("BROADCAST_LIVE"); setNewsTitle(""); setNewsContent(""); refreshAll(); }
+    else { 
+      alert("BROADCAST_LIVE"); 
+      setNewsTitle(""); 
+      setNewsContent(""); 
+      refreshAll(); 
+    }
   };
 
   // --- DELETE ACTIONS ---
@@ -71,9 +79,8 @@ export default function AdminDashboard() {
 
   const deleteNews = async (id: string) => {
     if (confirm("PURGE_BROADCAST_LOG?")) {
-      const { error } = await supabase.from('announcements').delete().eq('id', id);
-      if (error) alert("DELETE_ERROR: " + error.message);
-      else refreshAll();
+      await supabase.from('announcements').delete().eq('id', id);
+      refreshAll();
     }
   };
 
@@ -90,7 +97,6 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white font-mono space-y-8">
       
-      {/* NAVIGATION HEADER */}
       <div className="flex justify-between items-center border-b-2 border-gray-800 pb-4">
         <Link href="/" className="nes-btn is-error text-[8px]">&lt; DISCONNECT</Link>
         <p className="nes-text is-primary text-[10px]">ROOT@ADMIN_TERMINAL:~$</p>
@@ -98,10 +104,9 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
         
-        {/* --- LEFT COLUMN: DATA MANAGEMENT --- */}
+        {/* LEFT COLUMN: MANAGEMENT */}
         <div className="space-y-10">
           
-          {/* 1. SECURE INBOX (CONTACT MESSAGES) */}
           <section className="nes-container with-title is-dark">
             <p className="title">SECURE_INBOX</p>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
@@ -110,8 +115,8 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-start">
                     <div className="text-[8px] space-y-1">
                       <p className="text-blue-400 uppercase">SENDER: {m.sender_name} ({m.sender_email})</p>
-                      <p className="text-yellow-400 font-bold">SUBJ: {m.subject}</p>
-                      <p className="mt-2 text-white text-[9px] bg-black/30 p-2 border border-gray-800">{m.content}</p>
+                      <p className="text-yellow-400 font-bold uppercase">SUBJ: {m.subject}</p>
+                      <div className="mt-2 text-white text-[9px] bg-black/30 p-2 border border-gray-800 whitespace-pre-wrap">{m.content}</div>
                     </div>
                     <button onClick={() => deleteMessage(m.id)} className="nes-btn is-error text-[6px]">ERASE</button>
                   </div>
@@ -120,12 +125,11 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          {/* 2. NEWS ARCHIVE (ANNOUNCEMENT MANAGEMENT) */}
           <section className="nes-container with-title is-dark">
             <p className="title">BROADCAST_ARCHIVE</p>
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
               {news.length > 0 ? news.map(n => (
-                <div key={n.id} className="flex justify-between items-center p-2 border-b border-gray-800 hover:bg-gray-800/50">
+                <div key={n.id} className="flex justify-between items-center p-2 border-b border-gray-800">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-orange-400 font-bold uppercase truncate w-48">{n.title}</span>
                     <span className="text-[6px] text-gray-500">{new Date(n.created_at).toLocaleDateString()}</span>
@@ -136,7 +140,6 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          {/* 3. PROJECT INVENTORY */}
           <section className="nes-container with-title is-dark">
             <p className="title">PROJECT_INVENTORY</p>
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
@@ -150,29 +153,33 @@ export default function AdminDashboard() {
           </section>
         </div>
 
-        {/* --- RIGHT COLUMN: CREATION TOOLS --- */}
+        {/* RIGHT COLUMN: CREATION */}
         <div className="space-y-10">
           
-          {/* PROJECT CREATOR */}
           <section className="nes-container with-title is-dark">
             <p className="title">MODULE_ARCHITECT</p>
             <div className="space-y-4">
               <input placeholder="TITLE" className="nes-input is-dark text-xs" onChange={e => setTitle(e.target.value)} />
+              
               <div className="nes-select is-dark">
                 <select className="text-xs" value={language} onChange={e => setLanguage(e.target.value)}>
                   <option value="python">PYTHON 3</option>
                   <option value="c">C (GCC)</option>
                   <option value="java">JAVA (JDK 17)</option>
                   <option value="nodejs">NODE.JS</option>
+                  <option value="csharp">C#</option>
+                  <option value="octave">OCTAVE</option>
+                  <option value="racket">RACKET</option>
                   <option value="lua">LUA</option>
+                  <option value="go">GO</option>
                 </select>
               </div>
+
               <textarea placeholder="STARTER_CODE" className="nes-textarea is-dark h-40 text-[10px] font-mono" onChange={e => setBaseCode(e.target.value)} />
               <button onClick={saveProject} className="nes-btn is-success w-full text-[8px]">INITIALIZE_DEPLOYMENT</button>
             </div>
           </section>
 
-          {/* BROADCAST CREATOR */}
           <section className="nes-container with-title is-dark">
             <p className="title">NEW_BROADCAST</p>
             <div className="space-y-4">
