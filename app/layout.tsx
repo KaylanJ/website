@@ -1,5 +1,6 @@
 import "nes.css/css/nes.min.css";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ fontFamily: "'Press Start 2P', cursive", backgroundColor: "#212529" }}>
         {children}
+        <Analytics />
       </body>
     </html>
   );
