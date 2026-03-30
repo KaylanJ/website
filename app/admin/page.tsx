@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import Link from 'next/link'; // Standardized import
+import Link from 'next/link';
 
 export default function AdminDashboard() {
   const ADMIN_EMAIL = 'kay31286@gmail.com'; 
@@ -9,45 +9,51 @@ export default function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // --- FIX 1: Added missing 'news' state ---
+  // --- DATABASE STATES ---
   const [news, setNews] = useState<any[]>([]);
+  const [existingProjects, setExistingProjects] = useState<any[]>([]);
   
-  // Project Form State
+  // --- PROJECT FORM STATE ---
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [language, setLanguage] = useState("python");
   const [baseCode, setBaseCode] = useState("");
   const [testCases, setTestCases] = useState([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
-  const [existingProjects, setExistingProjects] = useState<any[]>([]);
 
-  // News Form State
+  // --- NEWS FORM STATE ---
   const [newsTitle, setNewsTitle] = useState("");
   const [newsContent, setNewsContent] = useState("");
 
+  // INITIAL BOOT
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email === ADMIN_EMAIL) {
         setIsLoggedIn(true);
-        fetchInventory();
-        fetchNews(); // --- FIX 2: Fetch news on load ---
+        refreshData(); // Fetch both projects and news
       }
       setLoading(false);
     };
     checkUser();
   }, []);
 
+  // REUSABLE REFRESH LOGIC
+  const refreshData = async () => {
+    fetchInventory();
+    fetchNews();
+  };
+
   const fetchInventory = async () => {
     const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
     setExistingProjects(data || []);
   };
 
-  // --- FIX 3: Reusable News Fetcher ---
   const fetchNews = async () => {
     const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
     setNews(data || []);
   };
 
+  // FILE HANDLER FOR TEST CASES
   const handleFileRead = (index: number, file: File | undefined) => {
     if (!file) return;
     const reader = new FileReader();
@@ -61,10 +67,15 @@ export default function AdminDashboard() {
     reader.readAsText(file);
   };
 
+  // CREATE ACTIONS
   const saveProject = async () => {
     setLoading(true);
     const { data: pData, error: pErr } = await supabase.from('projects').insert([{ title, description, language, base_code: baseCode }]).select();
-    if (pErr) return alert("UPLOAD_FAILED");
+    if (pErr) {
+      alert("UPLOAD_FAILED");
+      setLoading(false);
+      return;
+    }
     const finalTests = testCases.map(tc => ({ ...tc, project_id: pData[0].id }));
     await supabase.from('test_cases').insert(finalTests);
     alert("PROJECT_DEPLOYED");
@@ -79,11 +90,11 @@ export default function AdminDashboard() {
       alert("BROADCAST_SENT"); 
       setNewsTitle(""); 
       setNewsContent(""); 
-      fetchNews(); // Refresh list after posting
+      fetchNews(); 
     }
   };
 
-  // --- FIX 4: Added missing deleteProject function ---
+  // DELETE ACTIONS
   const deleteProject = async (id: string) => {
     if (confirm("ERASE_MODULE: ARE_YOU_SURE?")) {
       const { error } = await supabase.from('projects').delete().eq('id', id);
@@ -106,7 +117,7 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white font-mono space-y-6">
       
-      {/* 1. TOP NAVIGATION / BACK BUTTON */}
+      {/* 1. TOP NAVIGATION */}
       <div className="flex justify-between items-center border-b-2 border-gray-800 pb-4">
         <Link href="/" className="nes-btn is-error text-[8px]">
           &lt; EXIT_ADMIN_TERMINAL
@@ -114,32 +125,30 @@ export default function AdminDashboard() {
         <p className="nes-text is-primary text-[10px]">ADMIN_LOGGED_IN: {ADMIN_EMAIL}</p>
       </div>
 
-      {/* 2. MAIN GRID LAYOUT */}
+      {/* 2. MAIN GRID */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
         
-        {/* --- LEFT COLUMN: CREATION TOOLS --- */}
+        {/* --- LEFT COLUMN: CREATION --- */}
         <div className="space-y-10">
-          
-          {/* PROJECT CREATOR */}
           <section className="nes-container with-title is-dark">
             <p className="title">CREATE_MODULE</p>
             <div className="space-y-4">
               <input placeholder="PROJECT_TITLE" className="nes-input is-dark text-xs" onChange={e => setTitle(e.target.value)} />
+              
               <div className="nes-select is-dark">
-                <div className="nes-select is-dark">
-                  <select className="text-xs" value={language} onChange={e => setLanguage(e.target.value)}>
-                    <option value="python">PYTHON 3</option>
-                    <option value="c">C (GCC)</option>
-                    <option value="java">JAVA (JDK 17)</option>
-                    <option value="nodejs">JAVASCRIPT (NODE.JS)</option>
-                    <option value="csharp">C# (.NET)</option>
-                    <option value="octave">OCTAVE (MATLAB-ALT)</option>
-                    <option value="racket">RACKET (LISP-STYLE)</option>
-                    <option value="lua">LUA</option>
-                    <option value="go">GO LANG</option>
-                  </select>
-                </div>
+                <select className="text-xs" value={language} onChange={e => setLanguage(e.target.value)}>
+                  <option value="python">PYTHON 3</option>
+                  <option value="c">C (GCC)</option>
+                  <option value="java">JAVA (JDK 17)</option>
+                  <option value="nodejs">JAVASCRIPT (NODE.JS)</option>
+                  <option value="csharp">C# (.NET)</option>
+                  <option value="octave">OCTAVE (MATLAB-ALT)</option>
+                  <option value="racket">RACKET (LISP-STYLE)</option>
+                  <option value="lua">LUA</option>
+                  <option value="go">GO LANG</option>
+                </select>
               </div>
+
               <textarea placeholder="STARTER_CODE_TEMPLATE" className="nes-textarea is-dark h-32 text-[10px] font-mono" onChange={e => setBaseCode(e.target.value)} />
               
               <p className="text-yellow-500 text-[10px] uppercase underline">Test Suite Setup</p>
@@ -163,7 +172,6 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          {/* BROADCAST CENTER (POST NEWS) */}
           <section className="nes-container with-title is-dark">
             <p className="title">POST_BROADCAST</p>
             <div className="space-y-4">
@@ -176,8 +184,6 @@ export default function AdminDashboard() {
 
         {/* --- RIGHT COLUMN: MANAGEMENT --- */}
         <div className="space-y-10">
-          
-          {/* PROJECT INVENTORY */}
           <section className="nes-container with-title is-dark">
             <p className="title">PROJECT_INVENTORY</p>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
@@ -198,7 +204,6 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          {/* NEWS MANAGEMENT */}
           <section className="nes-container with-title is-dark">
             <p className="title">NEWS_ARCHIVE</p>
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
