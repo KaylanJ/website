@@ -9,14 +9,12 @@ export default function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // --- DATA STATES ---
   const [news, setNews] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [inbox, setInbox] = useState<any[]>([]);
   
-  // --- FORM STATES ---
   const [title, setTitle] = useState("");
-  const [language, setLanguage] = useState("python");
+  const [language, setLanguage] = useState("python3"); // Default to Python 3
   const [baseCode, setBaseCode] = useState("");
   const [testCases, setTestCases] = useState([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
   const [newsTitle, setNewsTitle] = useState("");
@@ -43,13 +41,11 @@ export default function AdminDashboard() {
     setInbox(mData || []);
   };
 
-  // --- CREATE ACTIONS ---
   const saveProject = async () => {
     setLoading(true);
     const { data: pData, error: pErr } = await supabase.from('projects').insert([{ title, language, base_code: baseCode }]).select();
     if (pErr) return alert("DEPLOYMENT_FAILED");
     
-    // Attach project_id to test cases and insert
     const finalTests = testCases.map(tc => ({ ...tc, project_id: pData[0].id }));
     await supabase.from('test_cases').insert(finalTests);
     
@@ -61,15 +57,9 @@ export default function AdminDashboard() {
   const postNews = async () => {
     const { error } = await supabase.from('announcements').insert([{ title: newsTitle, content: newsContent }]);
     if (error) alert("BROADCAST_FAILED");
-    else { 
-      alert("BROADCAST_LIVE"); 
-      setNewsTitle(""); 
-      setNewsContent(""); 
-      refreshAll(); 
-    }
+    else { alert("BROADCAST_LIVE"); setNewsTitle(""); setNewsContent(""); refreshAll(); }
   };
 
-  // --- DELETE ACTIONS ---
   const deleteProject = async (id: string) => {
     if (confirm("ERASE_PROJECT_DATA?")) {
       await supabase.from('projects').delete().eq('id', id);
@@ -106,7 +96,6 @@ export default function AdminDashboard() {
         
         {/* LEFT COLUMN: MANAGEMENT */}
         <div className="space-y-10">
-          
           <section className="nes-container with-title is-dark">
             <p className="title">SECURE_INBOX</p>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
@@ -155,7 +144,6 @@ export default function AdminDashboard() {
 
         {/* RIGHT COLUMN: CREATION */}
         <div className="space-y-10">
-          
           <section className="nes-container with-title is-dark">
             <p className="title">MODULE_ARCHITECT</p>
             <div className="space-y-4">
@@ -163,7 +151,8 @@ export default function AdminDashboard() {
               
               <div className="nes-select is-dark">
                 <select className="text-xs" value={language} onChange={e => setLanguage(e.target.value)}>
-                  <option value="python">PYTHON 3</option>
+                  <option value="python3">PYTHON 3</option>
+                  <option value="cpp17">C++ (GCC)</option>
                   <option value="c">C (GCC)</option>
                   <option value="java">JAVA (JDK 17)</option>
                   <option value="nodejs">NODE.JS</option>
@@ -188,7 +177,6 @@ export default function AdminDashboard() {
               <button onClick={postNews} className="nes-btn is-warning w-full text-[8px]">TRANSMIT_SIGNAL</button>
             </div>
           </section>
-
         </div>
       </div>
     </div>
