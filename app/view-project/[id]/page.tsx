@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/dist/client/link';
 
 export default function ProjectLab() {
   const { id } = useParams();
@@ -19,28 +20,41 @@ export default function ProjectLab() {
   }, [id]);
 
   const runTest = async (test: any) => {
-    setTerminal(`RUNNING: ${test.name}...\n`);
+    setTerminal(`[INITIALIZING] LANGUAGE: ${project.language.toUpperCase()}...\n`);
+    
     const res = await fetch("/api/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         script: userCode,
-        language: project.language,
+        language: project.language, // This now maps to the new keys
         stdin: test.input,
         file_name: test.file_name,
         file_content: test.file_content
       }),
     });
+
     const data = await res.json();
-    const passed = data.output?.trim() === test.expected_output?.trim();
-    setResults((prev: any) => ({ ...prev, [test.id]: passed ? "PASS" : "FAIL" }));
-    setTerminal(data.output || "NO_OUTPUT_RECEIVED");
+    
+    // Handling the response
+    if (data.output) {
+      const passed = data.output.trim() === test.expected.trim();
+      setResults((prev: any) => ({ ...prev, [test.id]: passed ? "PASS" : "FAIL" }));
+      setTerminal(data.output);
+    } else {
+      setTerminal("RUNTIME_ERROR: Check syntax or API limits.");
+    }
   };
 
   if (!project) return <div className="p-20 text-white nes-text">LOADING...</div>;
 
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white font-mono">
+      <div className="mb-6">
+         <Link href="/" className="nes-btn is-small text-[8px]">
+           &lt; RETURN_TO_HOME
+         </Link>
+      </div>
       <h2 className="nes-text is-warning mb-4 uppercase underline">{project.title}</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="nes-container with-title is-dark">
