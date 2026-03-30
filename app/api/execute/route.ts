@@ -6,26 +6,28 @@ export async function POST(req: Request) {
     let finalScript = script;
 
     // 1. Map internal names to JDoodle keys & version indices
-    const langConfig: Record<string, { lang: string, ver: string }> = {
-      python: { lang: "python3", ver: "4" },
-      c: { lang: "c", ver: "5" },
-      java: { lang: "java", ver: "4" },
-      nodejs: { lang: "nodejs", ver: "4" },
-      csharp: { lang: "csharp", ver: "4" },
-      octave: { lang: "octave", ver: "3" },
-      racket: { lang: "racket", ver: "2" },
-      lua: { lang: "lua", ver: "2" },
-      go: { lang: "go", ver: "4" }
+    const langConfig: { [key: string]: { language: string; versionIndex: string } } = {
+      "python3": { language: "python3", versionIndex: "4" },
+      "cpp17": { language: "cpp17", versionIndex: "1" }, 
+      "c": { language: "c", versionIndex: "5" },
+      "java": { language: "java", versionIndex: "4" },
+      "nodejs": { language: "nodejs", versionIndex: "4" },
+      "csharp": { language: "csharp", versionIndex: "4" },
+      "octave": { language: "octave", versionIndex: "4" },
+      "racket": { language: "racket", versionIndex: "0" },
+      "lua": { language: "lua", versionIndex: "3" },
+      "go": { language: "go", versionIndex: "4" },
     };
 
-    const config = langConfig[language] || langConfig.python;
+    // FIX: Fallback to python3 if the requested language isn't in the map
+    const config = langConfig[language] || langConfig["python3"];
 
     // 2. Multi-Language File Injection Logic
     if (file_name && file_content) {
       const escaped = file_content.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
       
       switch (language) {
-        case 'python':
+        case 'python3':
           finalScript = `with open("${file_name}", "w") as f: f.write("${escaped}")\n` + script;
           break;
         case 'nodejs':
@@ -34,6 +36,11 @@ export async function POST(req: Request) {
         case 'c':
           const cInit = `\n#include <stdio.h>\nvoid __init() { FILE *f = fopen("${file_name}", "w"); if(f){fputs("${escaped}", f); fclose(f);}}\n`;
           finalScript = cInit + script.replace(/int\s+main\s*\(.*?\)\s*\{/, 'int main() { __init();');
+          break;
+        // ADDED: C++ File Injection
+        case 'cpp17':
+          const cppInit = `\n#include <fstream>\n#include <string>\nvoid __init() { std::ofstream f("${file_name}"); if(f.is_open()){f << "${escaped}"; f.close();}}\n`;
+          finalScript = cppInit + script.replace(/int\s+main\s*\(.*?\)\s*\{/, 'int main() { __init();');
           break;
         case 'java':
           const jInit = `public static void main(String args[]) { \n try { java.nio.file.Files.writeString(java.nio.file.Path.of("${file_name}"), "${escaped}"); } catch(Exception e) {} \n`;
@@ -62,8 +69,8 @@ export async function POST(req: Request) {
         clientId: process.env.JDOODLE_CLIENT_ID,
         clientSecret: process.env.JDOODLE_CLIENT_SECRET,
         script: finalScript,
-        language: config.lang,
-        versionIndex: config.ver,
+        language: config.language,    // FIX: was config.lang
+        versionIndex: config.versionIndex, // FIX: was config.ver
         stdin: stdin || ""
       }),
     });
@@ -72,6 +79,6 @@ export async function POST(req: Request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error("EXECUTION_ERROR:", error);
-    return NextResponse.json({ output: "SYSTEM_FAILURE: CHECK_API_CREDENTIALS" }, { status: 500 });
+    return NextResponse.json({ output: "SYSTEM_FAILURE: INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }
