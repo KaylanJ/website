@@ -27,16 +27,32 @@ export default function AdminDashboard() {
   const [newsContent, setNewsContent] = useState("");
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === ADMIN_EMAIL) {
+    // 1. Check for an existing session immediately on mount
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email === ADMIN_EMAIL) {
         setIsLoggedIn(true);
         refreshAll();
       }
       setLoading(false);
     };
-    checkUser();
-  }, []);
+
+    getInitialSession();
+
+    // 2. Listen for auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email === ADMIN_EMAIL) {
+        setIsLoggedIn(true);
+        // Only refresh data if we weren't already logged in to save API calls
+        if (!isLoggedIn) refreshAll(); 
+      } else {
+        setIsLoggedIn(false);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [isLoggedIn]); // Dependencies ensure it reacts correctly
 
   const refreshAll = async () => {
     const { data: pData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
