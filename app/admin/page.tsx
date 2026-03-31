@@ -110,7 +110,13 @@ export default function AdminDashboard() {
   };
 
   // --- ACTION HANDLERS ---
+  const getValidTestCases = () => {
+    return testCases.filter(tc => tc.name.trim() !== "" && tc.expected.trim() !== "");
+  };
+
   const saveProject = async () => {
+    if (!title.trim()) return alert("PROJECT_TITLE_REQUIRED");
+    
     setLoading(true);
     const { data: pData, error: pErr } = await supabase
       .from('projects')
@@ -118,13 +124,12 @@ export default function AdminDashboard() {
       .select();
 
     if (pErr) { 
-      alert("DEPLOYMENT_FAILED"); 
+      alert("DEPLOYMENT_FAILED: " + pErr.message); 
       setLoading(false); 
       return; 
     }
 
-    const validTests = testCases
-      .filter(tc => tc.name.trim() !== "" && tc.expected.trim() !== "")
+    const validTests = getValidTestCases()
       .map(tc => ({ ...tc, project_id: pData[0].id }));
 
     if (validTests.length > 0) {
@@ -132,12 +137,18 @@ export default function AdminDashboard() {
       if (tErr) {
         console.error("TEST_DATA_SYNC_ERROR", tErr);
         alert("WARNING: Test cases may not have saved properly");
+      } else {
+        alert(`MODULE_DEPLOYED_WITH_${validTests.length}_TEST_CASES`);
       }
     } else {
-      console.log("NO_VALID_TEST_CASES_PROVIDED");
+      alert("MODULE_DEPLOYED_NO_TEST_CASES");
     }
     
-    alert("MODULE_DEPLOYED_SUCCESSFULLY");
+    setTitle("");
+    setDescription("");
+    setBaseCode("");
+    setLanguage("python3");
+    setTestCases([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
     setLoading(false);
     refreshAll();
   };
@@ -279,7 +290,9 @@ export default function AdminDashboard() {
               <textarea placeholder="STARTER_CODE" className="nes-textarea is-dark h-24 text-[6px] font-mono" onChange={e => setBaseCode(e.target.value)} />
 
               <div className="border-2 border-gray-700 p-2 space-y-2 bg-black/10">
-                <p className="text-[6px] text-yellow-400">TEST_CASES</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-[6px] text-yellow-400">TEST_CASES: {getValidTestCases().length} VALID</p>
+                </div>
                 {testCases.map((tc, index) => (
                   <div key={index} className="p-2 border-l-2 border-yellow-600 bg-gray-800/20 space-y-1">
                     <input placeholder="NAME" className="nes-input is-dark text-[6px]" value={tc.name} onChange={e => updateTestCase(index, 'name', e.target.value)} />
