@@ -21,10 +21,7 @@ export default function AdminDashboard() {
   const [baseCode, setBaseCode] = useState("");
   const [description, setDescription] = useState("");
   const [testCases, setTestCases] = useState([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
-  
-  // --- TEST CASE MANAGEMENT STATES ---
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [independentTestCases, setIndependentTestCases] = useState([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
+  const [lastProjectId, setLastProjectId] = useState("");
   
   const [newsTitle, setNewsTitle] = useState("");
   const [newsContent, setNewsContent] = useState("");
@@ -114,53 +111,33 @@ export default function AdminDashboard() {
   };
 
   // --- INDEPENDENT TEST CASE FUNCTIONS ---
-  const addIndependentTestCase = () => {
-    setIndependentTestCases([...independentTestCases, { name: "", input: "", expected: "", file_name: "", file_content: "" }]);
-  };
+  const saveTestCases = async () => {
+    if (!lastProjectId.trim()) {
+      alert("DEPLOY_PROJECT_FIRST");
+      return;
+    }
 
-  const removeIndependentTestCase = (index: number) => {
-    setIndependentTestCases(independentTestCases.filter((_, i) => i !== index));
-  };
-
-  const updateIndependentTestCase = (index: number, field: string, value: string) => {
-    const newTests = [...independentTestCases];
-    (newTests[index] as any)[field] = value;
-    setIndependentTestCases(newTests);
-  };
-
-  const handleIndependentFileRead = (index: number, file: File | undefined) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      const newTests = [...independentTestCases];
-      newTests[index] = { ...newTests[index], file_name: file.name, file_content: content };
-      setIndependentTestCases(newTests);
-    };
-    reader.readAsText(file);
-  };
-
-  const saveIndependentTestCases = async () => {
-    if (!selectedProjectId.trim()) return alert("SELECT_PROJECT_ID");
-    
-    const validTests = independentTestCases
+    const validTests = testCases
       .filter(tc => tc.name.trim() !== "" && tc.expected.trim() !== "")
-      .map(tc => ({ ...tc, project_id: selectedProjectId }));
+      .map(tc => ({ ...tc, project_id: lastProjectId }));
 
-    if (validTests.length === 0) return alert("NO_VALID_TEST_CASES");
+    if (validTests.length === 0) {
+      alert("NO_VALID_TEST_CASES_TO_SAVE");
+      return;
+    }
 
     setLoading(true);
     const { error: tErr } = await supabase.from('test_cases').insert(validTests);
     
     if (tErr) {
-      alert("FAILED_TO_SAVE_TEST_CASES: " + tErr.message);
+      alert("FAILED_TO_SAVE: " + tErr.message);
+      console.error("Test save error:", tErr);
     } else {
-      alert(`SAVED_${validTests.length}_TEST_CASES_TO_PROJECT`);
-      setSelectedProjectId("");
-      setIndependentTestCases([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
+      alert(`SAVED_${validTests.length}_TEST_CASES`);
+      setTestCases([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
+      setLastProjectId("");
     }
     setLoading(false);
-    refreshAll();
   };
 
   // --- ACTION HANDLERS ---
@@ -183,26 +160,13 @@ export default function AdminDashboard() {
       return; 
     }
 
-    const validTests = getValidTestCases()
-      .map(tc => ({ ...tc, project_id: pData[0].id }));
-
-    if (validTests.length > 0) {
-      const { error: tErr } = await supabase.from('test_cases').insert(validTests);
-      if (tErr) {
-        console.error("TEST_DATA_SYNC_ERROR", tErr);
-        alert("WARNING: Test cases may not have saved properly");
-      } else {
-        alert(`MODULE_DEPLOYED_WITH_${validTests.length}_TEST_CASES`);
-      }
-    } else {
-      alert("MODULE_DEPLOYED_NO_TEST_CASES");
-    }
+    alert("PROJECT_DEPLOYED");
+    setLastProjectId(pData[0].id);
     
     setTitle("");
     setDescription("");
     setBaseCode("");
     setLanguage("python3");
-    setTestCases([{ name: "", input: "", expected: "", file_name: "", file_content: "" }]);
     setLoading(false);
     refreshAll();
   };
@@ -364,42 +328,10 @@ export default function AdminDashboard() {
                 <button type="button" onClick={addTestCase} className="nes-btn is-primary text-[6px] w-full">+ ADD</button>
               </div>
 
-              <button onClick={saveProject} className="nes-btn is-success w-full text-[7px]">DEPLOY</button>
-            </div>
-          </section>
-
-          <section className="nes-container with-title is-dark">
-            <p className="title text-[7px]">TEST_CASE_MANAGER</p>
-            <div className="space-y-2">
-              <input 
-                placeholder="PROJECT_ID" 
-                className="nes-input is-dark text-[7px]" 
-                value={selectedProjectId} 
-                onChange={e => setSelectedProjectId(e.target.value)} 
-              />
-              
-              <div className="border-2 border-gray-700 p-2 space-y-2 bg-black/10">
-                <div className="flex justify-between items-center">
-                  <p className="text-[6px] text-yellow-400">TESTS: {independentTestCases.filter(tc => tc.name.trim() !== "" && tc.expected.trim() !== "").length} VALID</p>
-                </div>
-                {independentTestCases.map((tc, index) => (
-                  <div key={index} className="p-2 border-l-2 border-yellow-600 bg-gray-800/20 space-y-1">
-                    <input placeholder="NAME" className="nes-input is-dark text-[6px]" value={tc.name} onChange={e => updateIndependentTestCase(index, 'name', e.target.value)} />
-                    <textarea placeholder="INPUT" className="nes-textarea is-dark text-[6px] h-8" value={tc.input} onChange={e => updateIndependentTestCase(index, 'input', e.target.value)} />
-                    <textarea placeholder="EXPECTED" className="nes-textarea is-dark text-[6px] h-8" value={tc.expected} onChange={e => updateIndependentTestCase(index, 'expected', e.target.value)} />
-                    
-                    <div className="p-1 border border-gray-800">
-                      <label className="text-[5px] text-blue-400 block mb-0.5">FILE</label>
-                      <input type="file" className="text-[5px]" onChange={e => handleIndependentFileRead(index, e.target.files?.[0])} />
-                      {tc.file_name && <p className="text-[5px] text-green-500 mt-0.5">✓ {tc.file_name}</p>}
-                    </div>
-                    <button type="button" onClick={() => removeIndependentTestCase(index)} className="nes-btn is-error text-[5px] p-0.5 w-full">REMOVE</button>
-                  </div>
-                ))}
-                <button type="button" onClick={addIndependentTestCase} className="nes-btn is-primary text-[6px] w-full">+ ADD</button>
+              <div className="flex gap-2">
+                <button onClick={saveProject} className="nes-btn is-success flex-1 text-[7px]">DEPLOY</button>
+                <button onClick={saveTestCases} disabled={!lastProjectId} className={`nes-btn flex-1 text-[7px] ${lastProjectId ? "is-warning" : "is-disabled"}`}>SAVE_TESTS</button>
               </div>
-
-              <button onClick={saveIndependentTestCases} className="nes-btn is-warning w-full text-[7px]">SAVE_TEST_CASES</button>
             </div>
           </section>
         </div>
