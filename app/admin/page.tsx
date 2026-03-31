@@ -115,17 +115,35 @@ export default function AdminDashboard() {
 
   // --- ACTION HANDLERS ---
   const saveProject = async () => {
-    setLoading(true);
-    const { data: pData, error: pErr } = await supabase.from('projects').insert([{ title, language, base_code: baseCode, description }]).select();
-    if (pErr) { alert("DEPLOYMENT_FAILED"); setLoading(false); return; }
+  setLoading(true);
+  
+  // 1. Insert the project first
+  const { data: pData, error: pErr } = await supabase
+    .from('projects')
+    .insert([{ title, language, base_code: baseCode, description }])
+    .select();
 
-    const finalTests = testCases.map(tc => ({ ...tc, project_id: pData[0].id }));
-    await supabase.from('test_cases').insert(finalTests);
-    
-    alert("MODULE_DEPLOYED");
-    setLoading(false);
-    refreshAll();
-  };
+  if (pErr) { 
+    alert("DEPLOYMENT_FAILED"); 
+    setLoading(false); 
+    return; 
+  }
+
+  // 2. Only insert test cases if they have content
+  // We filter out any "empty" test case rows from the UI
+  const validTests = testCases
+    .filter(tc => tc.name.trim() !== "" || tc.input.trim() !== "")
+    .map(tc => ({ ...tc, project_id: pData[0].id }));
+
+  if (validTests.length > 0) {
+    const { error: tErr } = await supabase.from('test_cases').insert(validTests);
+    if (tErr) console.error("TEST_DATA_SYNC_ERROR", tErr);
+  }
+  
+  alert("MODULE_DEPLOYED_SUCCESSFULLY");
+  setLoading(false);
+  refreshAll();
+};
 
   const postNews = async () => {
     await supabase.from('announcements').insert([{ title: newsTitle, content: newsContent }]);
@@ -178,6 +196,33 @@ export default function AdminDashboard() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+
+        {/* --- ANNOUNCEMENT MANAGEMENT --- */}
+<section className="nes-container with-title is-dark">
+  <p className="title">BROADCAST_CONTROL</p>
+  <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+    {news.length === 0 && <p className="text-[8px] text-gray-500">NO_ACTIVE_BROADCASTS</p>}
+    {news.map(n => (
+      <div key={n.id} className="p-3 border-b border-gray-700 bg-black/20">
+        <div className="flex justify-between items-start mb-2">
+          <div className="space-y-1">
+            <p className="text-yellow-400 text-[10px] uppercase font-bold">{n.title}</p>
+            <p className="text-[8px] text-gray-400 line-clamp-2">{n.content}</p>
+            <p className="text-[6px] text-gray-600">
+              {new Date(n.created_at).toLocaleDateString()}
+            </p>
+          </div>
+          <button 
+            onClick={() => deleteNews(n.id)} 
+            className="nes-btn is-error text-[6px] p-1"
+          >
+            DELETE
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
         
         {/* --- LEFT: MANAGEMENT COLUMN --- */}
         <div className="space-y-10">
