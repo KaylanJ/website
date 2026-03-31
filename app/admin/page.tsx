@@ -8,6 +8,8 @@ export default function AdminDashboard() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   // --- DATA STATES ---
   const [news, setNews] = useState<any[]>([]);
@@ -43,6 +45,30 @@ export default function AdminDashboard() {
     setProjects(pData || []);
     setNews(nData || []);
     setInbox(mData || []);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert("LOGIN_FAILED: " + error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data.user?.email === ADMIN_EMAIL) {
+      setIsLoggedIn(true);
+      refreshAll();
+    } else {
+      alert("ACCESS_DENIED: NOT_AN_ADMIN");
+      await supabase.auth.signOut();
+    }
+    setLoading(false);
   };
 
   // --- TEST CASE LOGIC ---
@@ -104,7 +130,43 @@ export default function AdminDashboard() {
   };
 
   if (loading) return <div className="p-20 text-white nes-text">INITIALIZING...</div>;
-  if (!isLoggedIn) return <div className="p-20 text-white nes-text">UNAUTHORIZED</div>;
+
+  // --- THIS IS THE NEW LOGIN SCREEN FOR UNAUTHENTICATED USERS ---
+  if (!isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white font-mono">
+        <div className="nes-container with-title is-dark max-w-sm w-full">
+          <p className="title text-[10px]">ADMIN_LOGIN</p>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="nes-field">
+              <label className="text-[8px]">EMAIL</label>
+              <input 
+                type="email" 
+                className="nes-input is-dark text-xs" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+              />
+            </div>
+            <div className="nes-field">
+              <label className="text-[8px]">PASSWORD</label>
+              <input 
+                type="password" 
+                className="nes-input is-dark text-xs" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+            </div>
+            <button type="submit" className="nes-btn is-primary w-full text-[10px]">AUTHENTICATE</button>
+            <div className="text-center mt-2">
+              <Link href="/" className="text-[8px] text-gray-500 underline">RETURN_TO_BASE</Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white font-mono space-y-10">
