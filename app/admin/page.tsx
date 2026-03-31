@@ -124,12 +124,17 @@ export default function AdminDashboard() {
     }
 
     const validTests = testCases
-      .filter(tc => tc.name.trim() !== "" || tc.input.trim() !== "" || tc.file_name !== "")
+      .filter(tc => tc.name.trim() !== "" && tc.expected.trim() !== "")
       .map(tc => ({ ...tc, project_id: pData[0].id }));
 
     if (validTests.length > 0) {
       const { error: tErr } = await supabase.from('test_cases').insert(validTests);
-      if (tErr) console.error("TEST_DATA_SYNC_ERROR", tErr);
+      if (tErr) {
+        console.error("TEST_DATA_SYNC_ERROR", tErr);
+        alert("WARNING: Test cases may not have saved properly");
+      }
+    } else {
+      console.log("NO_VALID_TEST_CASES_PROVIDED");
     }
     
     alert("MODULE_DEPLOYED_SUCCESSFULLY");
@@ -255,6 +260,8 @@ export default function AdminDashboard() {
             <p className="title text-[7px]">MODULE_ARCHITECT</p>
             <div className="space-y-2 max-h-screen overflow-y-auto">
               <input placeholder="TITLE" className="nes-input is-dark text-[7px]" onChange={e => setTitle(e.target.value)} />
+              
+              <textarea placeholder="DESCRIPTION" className="nes-textarea is-dark h-12 text-[6px]" onChange={e => setDescription(e.target.value)} />
               
               <div className="nes-select is-dark">
                 <select className="text-[7px]" value={language} onChange={e => setLanguage(e.target.value)}>
