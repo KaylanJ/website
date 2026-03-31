@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [sent, setSent] = useState(false);
 
   // --- DATA STATES ---
   const [news, setNews] = useState<any[]>([]);
@@ -47,28 +47,29 @@ export default function AdminDashboard() {
     setInbox(mData || []);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (email !== ADMIN_EMAIL) return alert("UNAUTHORIZED_EMAIL");
+    
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
+      options: {
+        emailRedirectTo: window.location.origin + '/admin',
+      },
     });
 
     if (error) {
-      alert("LOGIN_FAILED: " + error.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data.user?.email === ADMIN_EMAIL) {
-      setIsLoggedIn(true);
-      refreshAll();
+      alert("TRANSMISSION_ERROR: " + error.message);
     } else {
-      alert("ACCESS_DENIED: NOT_AN_ADMIN");
-      await supabase.auth.signOut();
+      setSent(true);
     }
     setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
   };
 
   // --- TEST CASE LOGIC ---
@@ -131,38 +132,35 @@ export default function AdminDashboard() {
 
   if (loading) return <div className="p-20 text-white nes-text">INITIALIZING...</div>;
 
-  // --- THIS IS THE NEW LOGIN SCREEN FOR UNAUTHENTICATED USERS ---
   if (!isLoggedIn) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white font-mono">
         <div className="nes-container with-title is-dark max-w-sm w-full">
-          <p className="title text-[10px]">ADMIN_LOGIN</p>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="nes-field">
-              <label className="text-[8px]">EMAIL</label>
-              <input 
-                type="email" 
-                className="nes-input is-dark text-xs" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
-              />
+          <p className="title text-[10px]">ADMIN_ACCESS</p>
+          {sent ? (
+            <div className="text-center space-y-4">
+              <p className="text-[10px] text-green-400">MAGIC_LINK_TRANSMITTED</p>
+              <p className="text-[8px]">CHECK YOUR INBOX TO AUTHENTICATE.</p>
+              <button onClick={() => setSent(false)} className="nes-btn is-warning text-[8px]">RETRY</button>
             </div>
-            <div className="nes-field">
-              <label className="text-[8px]">PASSWORD</label>
-              <input 
-                type="password" 
-                className="nes-input is-dark text-xs" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
-              />
-            </div>
-            <button type="submit" className="nes-btn is-primary w-full text-[10px]">AUTHENTICATE</button>
-            <div className="text-center mt-2">
-              <Link href="/" className="text-[8px] text-gray-500 underline">RETURN_TO_BASE</Link>
-            </div>
-          </form>
+          ) : (
+            <form onSubmit={handleMagicLink} className="space-y-4">
+              <div className="nes-field">
+                <label className="text-[8px]">ADMIN_EMAIL</label>
+                <input 
+                  type="email" 
+                  className="nes-input is-dark text-xs" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required 
+                />
+              </div>
+              <button type="submit" className="nes-btn is-primary w-full text-[10px]">SEND_MAGIC_LINK</button>
+              <div className="text-center mt-2">
+                <Link href="/" className="text-[8px] text-gray-500 underline">RETURN_TO_BASE</Link>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -171,7 +169,7 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white font-mono space-y-10">
       <header className="flex justify-between items-center border-b-2 border-gray-800 pb-4">
-        <Link href="/" className="nes-btn is-error text-[8px]">LOGOUT</Link>
+        <button onClick={handleLogout} className="nes-btn is-error text-[8px]">LOGOUT</button>
         <p className="nes-text is-primary text-[10px]">ROOT@KAYLAN_J:~$</p>
       </header>
 
