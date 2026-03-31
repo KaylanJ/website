@@ -29,37 +29,37 @@ export default function ContactPage() {
   return (
     <div className="p-3 bg-gray-900 min-h-screen text-white font-mono flex flex-col items-center">
       <div className="w-full max-w-2xl space-y-4">
-        <Link href="/" className="nes-btn is-error text-[7px]">&lt; HOME</Link>
+        <Link href="/" className="nes-btn is-error text-[8px]">&lt; HOME</Link>
         
         <section className="nes-container with-title is-dark">
-          <p className="title text-[7px]">SECURE_UPLINK</p>
+          <p className="title text-[8px]">SECURE_UPLINK</p>
           <form onSubmit={sendMessage} className="space-y-3">
             <div className="nes-field">
-              <label className="text-[7px]">NAME</label>
-              <input required className="nes-input is-dark text-[7px]" value={formData.name} 
+              <label className="text-[8px]">NAME</label>
+              <input required className="nes-input is-dark text-[8px]" value={formData.name} 
                 onChange={e => setFormData({...formData, name: e.target.value})} />
             </div>
             
             <div className="nes-field">
-              <label className="text-[7px]">EMAIL</label>
-              <input required type="email" className="nes-input is-dark text-[7px]" value={formData.email}
+              <label className="text-[8px]">EMAIL</label>
+              <input required type="email" className="nes-input is-dark text-[8px]" value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
 
             <div className="nes-field">
-              <label className="text-[7px]">SUBJECT</label>
-              <input required className="nes-input is-dark text-[7px]" value={formData.subject}
+              <label className="text-[8px]">SUBJECT</label>
+              <input required className="nes-input is-dark text-[8px]" value={formData.subject}
                 onChange={e => setFormData({...formData, subject: e.target.value})} />
             </div>
 
             <div className="nes-field">
-              <label className="text-[7px]">MESSAGE</label>
-              <textarea required className="nes-textarea is-dark text-[7px] h-24" value={formData.message}
+              <label className="text-[8px]">MESSAGE</label>
+              <textarea required className="nes-textarea is-dark text-[8px] h-24" value={formData.message}
                 onChange={e => setFormData({...formData, message: e.target.value})} />
             </div>
 
-            <button type="submit" className="nes-btn is-primary w-full text-[7px]">SEND</button>
-            {status && <p className="nes-text is-warning text-[7px] text-center mt-2">{status}</p>}
+            <button type="submit" className="nes-btn is-primary w-full text-[8px]">SEND</button>
+            {status && <p className="nes-text is-warning text-[8px] text-center mt-2">{status}</p>}
           </form>
         </section>
       </div>

@@ -60,33 +60,33 @@ export default function ProjectLab() {
       <h2 className="nes-text is-warning mb-3 uppercase underline text-[10px]">{project.title}</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <div className="nes-container with-title is-dark">
-          <p className="title text-[6px]">SOURCE_CODE</p>
-          <textarea className="w-full h-72 bg-black text-green-400 p-2 text-[6px] outline-none font-mono" value={userCode} onChange={e => setUserCode(e.target.value)} />
+          <p className="title text-[7px]">SOURCE_CODE</p>
+          <textarea className="w-full h-72 bg-black text-green-400 p-2 text-[7px] outline-none font-mono" value={userCode} onChange={e => setUserCode(e.target.value)} />
         </div>
         <div className="space-y-3">
           <div className="nes-container with-title is-dark h-64">
-            <p className="title text-[6px]">CONSOLE</p>
-            <pre className="text-[6px] text-green-400 overflow-auto h-full">{terminal}</pre>
+            <p className="title text-[7px]">CONSOLE</p>
+            <pre className="text-[7px] text-green-400 overflow-auto h-full">{terminal}</pre>
           </div>
-          <button onClick={() => runCode()} className="nes-btn is-success w-full text-[6px]">RUN</button>
+          <button onClick={() => runCode()} className="nes-btn is-success w-full text-[8px]">RUN</button>
           <div className="nes-container with-title is-dark">
-            <p className="title text-[6px]">TESTS</p>
+            <p className="title text-[7px]">TESTS</p>
             {project.test_cases && project.test_cases.length > 0 ? (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {project.test_cases.map((test: any) => (
                   <div key={test.id} className="flex justify-between items-center bg-gray-800 p-1.5 border border-gray-600">
-                    <span className="text-[5px] truncate">{test.name}</span>
+                    <span className="text-[6px] truncate">{test.name}</span>
                     <div className="flex gap-1 items-center">
-                      <span className={`text-[5px] ${results[test.id] === 'PASS' ? 'text-green-400' : 'text-red-400'}`}>
+                      <span className={`text-[6px] ${results[test.id] === 'PASS' ? 'text-green-400' : 'text-red-400'}`}>
                         {results[test.id] || "—"}
                       </span>
-                      <button onClick={() => runCode(test)} className="nes-btn is-primary text-[5px] p-0.5">RUN</button>
+                      <button onClick={() => runCode(test)} className="nes-btn is-primary text-[6px] p-0.5">RUN</button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[5px] text-yellow-500 p-1">NO_TESTS</p>
+              <p className="text-[6px] text-yellow-500 p-1">NO_TESTS</p>
             )}
           </div>
         </div>
