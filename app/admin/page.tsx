@@ -119,7 +119,15 @@ export default function AdminDashboard() {
 
     const validTests = testCases
       .filter(tc => tc.name.trim() !== "" && tc.expected.trim() !== "")
-      .map(tc => ({ ...tc, project_id: lastProjectId }));
+      .map(tc => ({ 
+        project_id: lastProjectId,
+        name: tc.name,
+        input: tc.input || null,
+        expected_output: tc.expected,
+        description: null,
+        file_name: tc.file_name || null,
+        file_content: tc.file_content || null
+      }));
 
     if (validTests.length === 0) {
       alert("NO_VALID_TEST_CASES_TO_SAVE");

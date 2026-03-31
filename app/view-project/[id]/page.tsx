@@ -39,7 +39,7 @@ export default function ProjectLab() {
     // Handling the response
     if (data.output) {
       if (test) {
-        const passed = data.output.trim() === test.expected.trim();
+        const passed = data.output.trim() === test.expected_output.trim();
         setResults((prev: any) => ({ ...prev, [test.id]: passed ? "PASS" : "FAIL" }));
       }
       setTerminal(data.output);
