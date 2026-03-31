@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
 
 export default function AdminDashboard() {
   const ADMIN_EMAIL = 'kay31286@gmail.com'; 
@@ -27,7 +26,6 @@ export default function AdminDashboard() {
   const [newsContent, setNewsContent] = useState("");
 
   useEffect(() => {
-    // 1. Check for an existing session immediately on mount
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.email === ADMIN_EMAIL) {
@@ -39,11 +37,9 @@ export default function AdminDashboard() {
 
     getInitialSession();
 
-    // 2. Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.email === ADMIN_EMAIL) {
         setIsLoggedIn(true);
-        // Only refresh data if we weren't already logged in to save API calls
         if (!isLoggedIn) refreshAll(); 
       } else {
         setIsLoggedIn(false);
@@ -52,7 +48,7 @@ export default function AdminDashboard() {
     });
 
     return () => subscription.unsubscribe();
-  }, [isLoggedIn]); // Dependencies ensure it reacts correctly
+  }, [isLoggedIn]);
 
   const refreshAll = async () => {
     const { data: pData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
@@ -115,37 +111,34 @@ export default function AdminDashboard() {
 
   // --- ACTION HANDLERS ---
   const saveProject = async () => {
-  setLoading(true);
-  
-  // 1. Insert the project first
-  const { data: pData, error: pErr } = await supabase
-    .from('projects')
-    .insert([{ title, language, base_code: baseCode, description }])
-    .select();
+    setLoading(true);
+    const { data: pData, error: pErr } = await supabase
+      .from('projects')
+      .insert([{ title, language, base_code: baseCode, description }])
+      .select();
 
-  if (pErr) { 
-    alert("DEPLOYMENT_FAILED"); 
-    setLoading(false); 
-    return; 
-  }
+    if (pErr) { 
+      alert("DEPLOYMENT_FAILED"); 
+      setLoading(false); 
+      return; 
+    }
 
-  // 2. Only insert test cases if they have content
-  // We filter out any "empty" test case rows from the UI
-  const validTests = testCases
-    .filter(tc => tc.name.trim() !== "" || tc.input.trim() !== "")
-    .map(tc => ({ ...tc, project_id: pData[0].id }));
+    const validTests = testCases
+      .filter(tc => tc.name.trim() !== "" || tc.input.trim() !== "" || tc.file_name !== "")
+      .map(tc => ({ ...tc, project_id: pData[0].id }));
 
-  if (validTests.length > 0) {
-    const { error: tErr } = await supabase.from('test_cases').insert(validTests);
-    if (tErr) console.error("TEST_DATA_SYNC_ERROR", tErr);
-  }
-  
-  alert("MODULE_DEPLOYED_SUCCESSFULLY");
-  setLoading(false);
-  refreshAll();
-};
+    if (validTests.length > 0) {
+      const { error: tErr } = await supabase.from('test_cases').insert(validTests);
+      if (tErr) console.error("TEST_DATA_SYNC_ERROR", tErr);
+    }
+    
+    alert("MODULE_DEPLOYED_SUCCESSFULLY");
+    setLoading(false);
+    refreshAll();
+  };
 
   const postNews = async () => {
+    if (!newsTitle || !newsContent) return alert("EMPTY_FIELDS");
     await supabase.from('announcements').insert([{ title: newsTitle, content: newsContent }]);
     setNewsTitle(""); setNewsContent(""); refreshAll();
   };
@@ -196,36 +189,25 @@ export default function AdminDashboard() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-
-        {/* --- ANNOUNCEMENT MANAGEMENT --- */}
-<section className="nes-container with-title is-dark">
-  <p className="title">BROADCAST_CONTROL</p>
-  <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
-    {news.length === 0 && <p className="text-[8px] text-gray-500">NO_ACTIVE_BROADCASTS</p>}
-    {news.map(n => (
-      <div key={n.id} className="p-3 border-b border-gray-700 bg-black/20">
-        <div className="flex justify-between items-start mb-2">
-          <div className="space-y-1">
-            <p className="text-yellow-400 text-[10px] uppercase font-bold">{n.title}</p>
-            <p className="text-[8px] text-gray-400 line-clamp-2">{n.content}</p>
-            <p className="text-[6px] text-gray-600">
-              {new Date(n.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <button 
-            onClick={() => deleteNews(n.id)} 
-            className="nes-btn is-error text-[6px] p-1"
-          >
-            DELETE
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-</section>
         
         {/* --- LEFT: MANAGEMENT COLUMN --- */}
         <div className="space-y-10">
+          <section className="nes-container with-title is-dark">
+            <p className="title">BROADCAST_CONTROL</p>
+            <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+              {news.length === 0 && <p className="text-[8px] text-gray-500">NO_ACTIVE_BROADCASTS</p>}
+              {news.map(n => (
+                <div key={n.id} className="p-3 border-b border-gray-700 bg-black/20 flex justify-between items-center">
+                  <div className="space-y-1">
+                    <p className="text-yellow-400 text-[10px] uppercase font-bold">{n.title}</p>
+                    <p className="text-[8px] text-gray-400 line-clamp-1">{n.content}</p>
+                  </div>
+                  <button onClick={() => deleteNews(n.id)} className="nes-btn is-error text-[6px] p-1">DELETE</button>
+                </div>
+              ))}
+            </div>
+          </section>
+
           <section className="nes-container with-title is-dark">
             <p className="title">SECURE_INBOX</p>
             <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
@@ -258,9 +240,18 @@ export default function AdminDashboard() {
         {/* --- RIGHT: CREATION COLUMN --- */}
         <div className="space-y-10">
           <section className="nes-container with-title is-dark">
+            <p className="title text-[8px]">NEW_BROADCAST</p>
+            <div className="space-y-4">
+              <input placeholder="TITLE" className="nes-input is-dark text-xs" value={newsTitle} onChange={e => setNewsTitle(e.target.value)} />
+              <textarea placeholder="MESSAGE" className="nes-textarea is-dark h-20 text-[10px]" value={newsContent} onChange={e => setNewsContent(e.target.value)} />
+              <button onClick={postNews} className="nes-btn is-warning w-full text-[10px]">TRANSMIT</button>
+            </div>
+          </section>
+
+          <section className="nes-container with-title is-dark">
             <p className="title">MODULE_ARCHITECT</p>
             <div className="space-y-4">
-              <input placeholder="TITLE" className="nes-input is-dark text-xs" onChange={e => setTitle(e.target.value)} />
+              <input placeholder="PROJECT_TITLE" className="nes-input is-dark text-xs" onChange={e => setTitle(e.target.value)} />
               
               <div className="nes-select is-dark">
                 <select className="text-xs" value={language} onChange={e => setLanguage(e.target.value)}>
@@ -272,27 +263,28 @@ export default function AdminDashboard() {
                   <option value="csharp">C# (MONO)</option>
                   <option value="go">GO</option>
                   <option value="lua">LUA</option>
-                  <option value="octave">OCTAVE</option>
-                  <option value="racket">RACKET</option>
                 </select>
               </div>
 
-              <textarea placeholder="STARTER_CODE" className="nes-textarea is-dark h-32 text-[10px]" onChange={e => setBaseCode(e.target.value)} />
+              <textarea placeholder="STARTER_CODE" className="nes-textarea is-dark h-48 text-[10px] font-mono" onChange={e => setBaseCode(e.target.value)} />
 
-              <div className="border-2 border-gray-700 p-4 space-y-4">
-                <p className="text-[8px] text-yellow-400">TEST_CASES</p>
+              <div className="border-2 border-gray-700 p-4 space-y-4 bg-black/10">
+                <p className="text-[8px] text-yellow-400">TEST_LOGIC_&_FILES</p>
                 {testCases.map((tc, index) => (
                   <div key={index} className="p-3 border-l-2 border-yellow-600 bg-gray-800/20 space-y-2">
-                    <input placeholder="NAME" className="nes-input is-dark text-[8px]" value={tc.name} onChange={e => updateTestCase(index, 'name', e.target.value)} />
+                    <input placeholder="CASE_NAME" className="nes-input is-dark text-[8px]" value={tc.name} onChange={e => updateTestCase(index, 'name', e.target.value)} />
+                    <textarea placeholder="STDIN_INPUT" className="nes-textarea is-dark text-[8px] h-12" value={tc.input} onChange={e => updateTestCase(index, 'input', e.target.value)} />
+                    <textarea placeholder="EXPECTED_OUTPUT" className="nes-textarea is-dark text-[8px] h-12" value={tc.expected} onChange={e => updateTestCase(index, 'expected', e.target.value)} />
+                    
                     <div className="p-2 border border-gray-800">
-                      <label className="text-[6px] text-blue-400 block">FILE_INJECTION (OPTIONAL)</label>
+                      <label className="text-[6px] text-blue-400 block mb-1">FILE_INJECTION</label>
                       <input type="file" className="text-[6px]" onChange={e => handleFileRead(index, e.target.files?.[0])} />
-                      {tc.file_name && <p className="text-[6px] text-green-500">READY: {tc.file_name}</p>}
+                      {tc.file_name && <p className="text-[6px] text-green-500 mt-1">✓ {tc.file_name}</p>}
                     </div>
                     <button type="button" onClick={() => removeTestCase(index)} className="nes-btn is-error text-[6px]">REMOVE</button>
                   </div>
                 ))}
-                <button type="button" onClick={addTestCase} className="nes-btn is-primary text-[8px] w-full">+ ADD_CASE</button>
+                <button type="button" onClick={addTestCase} className="nes-btn is-primary text-[8px] w-full">+ ADD_TEST_CASE</button>
               </div>
 
               <button onClick={saveProject} className="nes-btn is-success w-full text-[10px]">DEPLOY_MODULE</button>
