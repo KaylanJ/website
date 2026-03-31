@@ -51,42 +51,42 @@ export default function ProjectLab() {
   if (!project) return <div className="p-20 text-white nes-text">LOADING...</div>;
 
   return (
-    <div className="p-6 bg-gray-900 min-h-screen text-white font-mono">
-      <div className="mb-6">
-         <Link href="/" className="nes-btn is-small text-[8px]">
-           &lt; RETURN_TO_HOME
+    <div className="p-3 bg-gray-900 min-h-screen text-white font-mono">
+      <div className="mb-3">
+         <Link href="/" className="nes-btn is-small text-[7px]">
+           &lt; HOME
          </Link>
       </div>
-      <h2 className="nes-text is-warning mb-4 uppercase underline">{project.title}</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <h2 className="nes-text is-warning mb-3 uppercase underline text-[10px]">{project.title}</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <div className="nes-container with-title is-dark">
-          <p className="title">SOURCE_CODE</p>
-          <textarea className="w-full h-80 bg-black text-green-400 p-4 text-xs outline-none" value={userCode} onChange={e => setUserCode(e.target.value)} />
+          <p className="title text-[7px]">SOURCE_CODE</p>
+          <textarea className="w-full h-72 bg-black text-green-400 p-2 text-[7px] outline-none font-mono" value={userCode} onChange={e => setUserCode(e.target.value)} />
         </div>
-        <div className="space-y-4">
-          <div className="nes-container with-title is-dark h-40">
-            <p className="title">CONSOLE_OUTPUT</p>
-            <pre className="text-[10px] text-green-400 overflow-auto h-full">{terminal}</pre>
+        <div className="space-y-3">
+          <div className="nes-container with-title is-dark h-64">
+            <p className="title text-[7px]">CONSOLE</p>
+            <pre className="text-[7px] text-green-400 overflow-auto h-full">{terminal}</pre>
           </div>
-          <button onClick={() => runCode()} className="nes-btn is-success w-full text-[10px]">RUN_CODE</button>
+          <button onClick={() => runCode()} className="nes-btn is-success w-full text-[7px]">RUN</button>
           <div className="nes-container with-title is-dark">
-            <p className="title">TEST_SEQUENCES</p>
+            <p className="title text-[7px]">TESTS</p>
             {project.test_cases && project.test_cases.length > 0 ? (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div className="space-y-1 max-h-48 overflow-y-auto">
                 {project.test_cases.map((test: any) => (
-                  <div key={test.id} className="flex justify-between items-center bg-gray-800 p-2 border border-gray-600">
-                    <span className="text-[8px]">{test.name}</span>
-                    <div className="flex gap-2 items-center">
-                      <span className={`text-[8px] ${results[test.id] === 'PASS' ? 'text-green-400' : 'text-red-400'}`}>
-                        {results[test.id] || "PENDING"}
+                  <div key={test.id} className="flex justify-between items-center bg-gray-800 p-1.5 border border-gray-600">
+                    <span className="text-[6px] truncate">{test.name}</span>
+                    <div className="flex gap-1 items-center">
+                      <span className={`text-[6px] ${results[test.id] === 'PASS' ? 'text-green-400' : 'text-red-400'}`}>
+                        {results[test.id] || "—"}
                       </span>
-                      <button onClick={() => runCode(test)} className="nes-btn is-primary text-[8px]">EXECUTE</button>
+                      <button onClick={() => runCode(test)} className="nes-btn is-primary text-[6px] p-0.5">RUN</button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[8px] text-yellow-500 p-2">NO_TEST_CASES_AVAILABLE</p>
+              <p className="text-[6px] text-yellow-500 p-1">NO_TESTS</p>
             )}
           </div>
         </div>
