@@ -54,9 +54,7 @@ export default function AdminDashboard() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: window.location.origin + '/admin',
-      },
+      options: { emailRedirectTo: window.location.origin + '/admin' },
     });
 
     if (error) {
@@ -140,25 +138,15 @@ export default function AdminDashboard() {
           {sent ? (
             <div className="text-center space-y-4">
               <p className="text-[10px] text-green-400">MAGIC_LINK_TRANSMITTED</p>
-              <p className="text-[8px]">CHECK YOUR INBOX TO AUTHENTICATE.</p>
               <button onClick={() => setSent(false)} className="nes-btn is-warning text-[8px]">RETRY</button>
             </div>
           ) : (
             <form onSubmit={handleMagicLink} className="space-y-4">
               <div className="nes-field">
                 <label className="text-[8px]">ADMIN_EMAIL</label>
-                <input 
-                  type="email" 
-                  className="nes-input is-dark text-xs" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required 
-                />
+                <input type="email" className="nes-input is-dark text-xs" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <button type="submit" className="nes-btn is-primary w-full text-[10px]">SEND_MAGIC_LINK</button>
-              <div className="text-center mt-2">
-                <Link href="/" className="text-[8px] text-gray-500 underline">RETURN_TO_BASE</Link>
-              </div>
             </form>
           )}
         </div>
@@ -177,15 +165,14 @@ export default function AdminDashboard() {
         
         {/* --- LEFT: MANAGEMENT COLUMN --- */}
         <div className="space-y-10">
-          
           <section className="nes-container with-title is-dark">
             <p className="title">SECURE_INBOX</p>
             <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
               {inbox.map(m => (
-                <div key={m.id} className="p-2 border-b border-gray-700 flex justify-between items-start">
+                <div key={m.id} className="p-2 border-b border-gray-700 flex justify-between">
                   <div className="text-[8px] space-y-1">
-                    <p className="text-blue-400">{m.sender_name} ({m.sender_email})</p>
-                    <p className="text-yellow-500 font-bold uppercase">{m.subject}</p>
+                    <p className="text-blue-400">{m.sender_name}</p>
+                    <p className="text-yellow-500 font-bold">{m.subject}</p>
                     <p className="text-gray-400">{m.content}</p>
                   </div>
                   <button onClick={() => deleteMessage(m.id)} className="nes-btn is-error text-[6px]">X</button>
@@ -195,23 +182,11 @@ export default function AdminDashboard() {
           </section>
 
           <section className="nes-container with-title is-dark">
-            <p className="title">BROADCAST_ARCHIVE</p>
-            <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-              {news.map(n => (
-                <div key={n.id} className="flex justify-between items-center p-2 border-b border-gray-800">
-                  <span className="text-[8px] truncate w-48 uppercase">{n.title}</span>
-                  <button onClick={() => deleteNews(n.id)} className="nes-btn is-error text-[6px]">PURGE</button>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="nes-container with-title is-dark">
             <p className="title">PROJECT_INVENTORY</p>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-2 max-h-60 overflow-y-auto">
               {projects.map(p => (
                 <div key={p.id} className="flex justify-between items-center p-2 border-b border-gray-800">
-                  <span className="text-[8px] uppercase">{p.title}</span>
+                  <span className="text-[8px] uppercase">{p.title} ({p.language})</span>
                   <button onClick={() => deleteProject(p.id)} className="nes-btn is-error text-[6px]">ERASE</button>
                 </div>
               ))}
@@ -221,62 +196,47 @@ export default function AdminDashboard() {
 
         {/* --- RIGHT: CREATION COLUMN --- */}
         <div className="space-y-10">
-          
           <section className="nes-container with-title is-dark">
             <p className="title">MODULE_ARCHITECT</p>
             <div className="space-y-4">
               <input placeholder="TITLE" className="nes-input is-dark text-xs" onChange={e => setTitle(e.target.value)} />
-              <textarea placeholder="DESCRIPTION" className="nes-textarea is-dark text-[8px] h-12" onChange={e => setDescription(e.target.value)} />
               
               <div className="nes-select is-dark">
                 <select className="text-xs" value={language} onChange={e => setLanguage(e.target.value)}>
                   <option value="python3">PYTHON 3</option>
-                  <option value="cpp17">C++ (GCC)</option>
+                  <option value="cpp17">C++ 17 (GCC)</option>
                   <option value="c">C (GCC)</option>
-                  <option value="java">JAVA</option>
-                  <option value="lua">LUA</option>
+                  <option value="java">JAVA 17</option>
+                  <option value="nodejs">NODE.JS</option>
+                  <option value="csharp">C# (MONO)</option>
                   <option value="go">GO</option>
+                  <option value="lua">LUA</option>
+                  <option value="octave">OCTAVE</option>
+                  <option value="racket">RACKET</option>
                 </select>
               </div>
 
-              <textarea placeholder="STARTER_CODE" className="nes-textarea is-dark h-32 text-[10px] font-mono" onChange={e => setBaseCode(e.target.value)} />
+              <textarea placeholder="STARTER_CODE" className="nes-textarea is-dark h-32 text-[10px]" onChange={e => setBaseCode(e.target.value)} />
 
-              {/* TEST CASES WITH FILE UPLOAD */}
-              <div className="border-2 border-gray-700 p-4 space-y-4 bg-black/10">
-                <p className="text-[8px] text-yellow-400 uppercase tracking-widest">Test_Cases</p>
+              <div className="border-2 border-gray-700 p-4 space-y-4">
+                <p className="text-[8px] text-yellow-400">TEST_CASES</p>
                 {testCases.map((tc, index) => (
-                  <div key={index} className="p-3 border-l-2 border-yellow-600 bg-gray-800/20 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <input placeholder="NAME" className="nes-input is-dark text-[8px] w-2/3" value={tc.name} onChange={e => updateTestCase(index, 'name', e.target.value)} />
-                      <button type="button" onClick={() => removeTestCase(index)} className="nes-btn is-error text-[6px]">REMOVE</button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <textarea placeholder="STDIN" className="nes-textarea is-dark text-[8px] h-10" value={tc.input} onChange={e => updateTestCase(index, 'input', e.target.value)} />
-                      <textarea placeholder="EXPECT" className="nes-textarea is-dark text-[8px] h-10" value={tc.expected} onChange={e => updateTestCase(index, 'expected', e.target.value)} />
-                    </div>
+                  <div key={index} className="p-3 border-l-2 border-yellow-600 bg-gray-800/20 space-y-2">
+                    <input placeholder="NAME" className="nes-input is-dark text-[8px]" value={tc.name} onChange={e => updateTestCase(index, 'name', e.target.value)} />
                     <div className="p-2 border border-gray-800">
-                      <label className="text-[6px] text-blue-400 uppercase block mb-1">Upload_Test_File</label>
+                      <label className="text-[6px] text-blue-400 block">FILE_INJECTION (OPTIONAL)</label>
                       <input type="file" className="text-[6px]" onChange={e => handleFileRead(index, e.target.files?.[0])} />
-                      {tc.file_name && <p className="text-[6px] text-green-500 mt-1 uppercase">Loaded: {tc.file_name}</p>}
+                      {tc.file_name && <p className="text-[6px] text-green-500">READY: {tc.file_name}</p>}
                     </div>
+                    <button type="button" onClick={() => removeTestCase(index)} className="nes-btn is-error text-[6px]">REMOVE</button>
                   </div>
                 ))}
-                <button type="button" onClick={addTestCase} className="nes-btn is-primary text-[8px] w-full">+ ADD_TEST_CASE</button>
+                <button type="button" onClick={addTestCase} className="nes-btn is-primary text-[8px] w-full">+ ADD_CASE</button>
               </div>
 
               <button onClick={saveProject} className="nes-btn is-success w-full text-[10px]">DEPLOY_MODULE</button>
             </div>
           </section>
-
-          <section className="nes-container with-title is-dark">
-            <p className="title">NEW_BROADCAST</p>
-            <div className="space-y-4">
-              <input placeholder="NEWS_TITLE" className="nes-input is-dark text-xs" value={newsTitle} onChange={e => setNewsTitle(e.target.value)} />
-              <textarea placeholder="CONTENT" className="nes-textarea is-dark h-20 text-[8px]" value={newsContent} onChange={e => setNewsContent(e.target.value)} />
-              <button onClick={postNews} className="nes-btn is-warning w-full text-[8px]">TRANSMIT</button>
-            </div>
-          </section>
-
         </div>
       </div>
     </div>

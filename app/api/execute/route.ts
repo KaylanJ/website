@@ -5,7 +5,6 @@ export async function POST(req: Request) {
     const { script, language, stdin, file_name, file_content } = await req.json();
     let finalScript = script;
 
-    // 1. Map internal names to JDoodle keys & version indices
     const langConfig: { [key: string]: { language: string; versionIndex: string } } = {
       "python3": { language: "python3", versionIndex: "4" },
       "cpp17": { language: "cpp17", versionIndex: "1" }, 
@@ -19,10 +18,8 @@ export async function POST(req: Request) {
       "go": { language: "go", versionIndex: "4" },
     };
 
-    // FIX: Fallback to python3 if the requested language isn't in the map
     const config = langConfig[language] || langConfig["python3"];
 
-    // 2. Multi-Language File Injection Logic
     if (file_name && file_content) {
       const escaped = file_content.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
       
@@ -37,7 +34,6 @@ export async function POST(req: Request) {
           const cInit = `\n#include <stdio.h>\nvoid __init() { FILE *f = fopen("${file_name}", "w"); if(f){fputs("${escaped}", f); fclose(f);}}\n`;
           finalScript = cInit + script.replace(/int\s+main\s*\(.*?\)\s*\{/, 'int main() { __init();');
           break;
-        // ADDED: C++ File Injection
         case 'cpp17':
           const cppInit = `\n#include <fstream>\n#include <string>\nvoid __init() { std::ofstream f("${file_name}"); if(f.is_open()){f << "${escaped}"; f.close();}}\n`;
           finalScript = cppInit + script.replace(/int\s+main\s*\(.*?\)\s*\{/, 'int main() { __init();');
@@ -59,6 +55,12 @@ export async function POST(req: Request) {
         case 'lua':
           finalScript = `local f = io.open("${file_name}", "w"); f:write("${escaped}"); f:close();\n` + script;
           break;
+        case 'go':
+          // GO Injection: Prepend an init function
+          const goInit = `\nimport "os"\nfunc init() { _ = os.WriteFile("${file_name}", []byte("${escaped}"), 0644) }\n`;
+          // We insert after the package declaration
+          finalScript = script.replace(/package\s+main/, `package main\n${goInit}`);
+          break;
       }
     }
 
@@ -69,8 +71,8 @@ export async function POST(req: Request) {
         clientId: process.env.JDOODLE_CLIENT_ID,
         clientSecret: process.env.JDOODLE_CLIENT_SECRET,
         script: finalScript,
-        language: config.language,    // FIX: was config.lang
-        versionIndex: config.versionIndex, // FIX: was config.ver
+        language: config.language,
+        versionIndex: config.versionIndex,
         stdin: stdin || ""
       }),
     });
