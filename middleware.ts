@@ -21,17 +21,16 @@ export async function middleware(req: NextRequest) {
   }
 
   // 2. Collect Visitor Data
-  // 2. Collect Visitor Data
-// 2. Collect Visitor Data
+ 
   const visitorData = {
-    path: nextUrl.pathname,
-    referer: headers.get('referer') || 'Direct',
-    ip_address: headers.get('x-forwarded-for')?.split(',')[0] || 'Unknown',
-    // We cast 'req' to 'any' here to tell TypeScript "I know Vercel adds this"
-    city: (req as any).geo?.city || 'Unknown',
-    region: (req as any).geo?.region || 'Unknown',
-    country: (req as any).geo?.country || 'Unknown',
-    user_agent: headers.get('user-agent') || 'Unknown',
+      path: nextUrl.pathname,
+      referer: headers.get('referer') || 'Direct',
+      ip_address: headers.get('x-forwarded-for')?.split(',')[0] || 'Unknown',
+      // Fallback chain: Check Vercel headers explicitly
+      city: headers.get('x-vercel-ip-city') || (req as any).geo?.city || 'Unknown',
+      region: headers.get('x-vercel-ip-country-region') || (req as any).geo?.region || 'Unknown',
+      country: headers.get('x-vercel-ip-country') || (req as any).geo?.country || 'Unknown',
+      user_agent: headers.get('user-agent') || 'Unknown',
   };
 
   // 3. Fire and forget the log (Don't 'await' it if you want the page to load fast)
